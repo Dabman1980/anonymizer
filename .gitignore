@@ -1,0 +1,22 @@
+# Файлы ключей (содержат реальные данные!)
+ключи_*.json
+
+# Обезличенные копии
+*_anon.*
+*_restored.*
+
+# Python
+__pycache__/
+*.pyc
+.env
+
+# macOS
+.DS_Store
+*.command.icloud
+
+# IDE
+.vscode/
+.idea/
+
+# Зависимости
+.deps_installed
