@@ -251,6 +251,64 @@ ENABLED_BY_DEFAULT = {"company", "project", "egrn", "kadastr", "fio",
 
 
 # ══════════════════════════════════════════════════════════════
+#  ЛИЧНЫЙ СЛОВАРЬ (нулевой проход)
+# ══════════════════════════════════════════════════════════════
+
+# Файл рядом со скриптом: одна запись на строку, # — комментарий.
+# Формат: «Название» или «Название | МЕТКА» (по умолчанию КОМПАНИЯ).
+# Закрывает то, что не ловят ни regex, ни NER: названия клиентов
+# латиницей без ОПФ (FinClever), внутренние имена проектов.
+# Файл в .gitignore — клиентские данные не попадают в репозиторий.
+DICT_FILENAME = "словарь_клиентов.txt"
+
+# Метка → type_id существующих правил, чтобы нумерация плейсхолдеров
+# не пересекалась между слоями ([КОМПАНИЯ_1] всегда уникален)
+DICT_LABEL_TO_ID = {"КОМПАНИЯ": "company", "ФИО": "fio", "ПРОЕКТ": "project"}
+
+
+def _dict_pattern(entry):
+    """Паттерн для записи словаря: границы слова, без учёта регистра.
+    Каждому русскому слову записи разрешается падежное окончание
+    («Ромашка Трейд» найдёт и «Ромашкой Трейд», и «Ромашке Трейд»)."""
+    words = []
+    for word in entry.split():
+        if re.search(r'[А-Яа-яёЁ]$', word) and len(word) >= 4:
+            # Срезаем окончание: двухбуквенное у прилагательных (-ая/-ий/-ое),
+            # однобуквенное у существительных (-а/-я/-ь)
+            stem = re.sub(r'(?:ая|яя|ий|ый|ое|ее|[аяьйео])$', '', word)
+            words.append(re.escape(stem) + r'[а-яё]{0,3}')
+        else:
+            words.append(re.escape(word))
+    body = r'\s+'.join(words)
+    return re.compile(
+        r'(?<![А-Яа-яёЁA-Za-z0-9_])' + body + r'(?![А-Яа-яёЁA-Za-z0-9_])',
+        re.IGNORECASE)
+
+
+def load_custom_dict(path=None):
+    """Возвращает ([(pattern, type_id, label), ...], путь_к_файлу).
+    Длинные записи первыми, чтобы «Ромашка Трейд» не перекрылась «Ромашкой»."""
+    p = Path(path) if path else Path(__file__).resolve().parent / DICT_FILENAME
+    if not p.exists():
+        return [], p
+    entries = []
+    for line in p.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "|" in line:
+            value, label = [s.strip() for s in line.split("|", 1)]
+            label = label.upper() or "КОМПАНИЯ"
+        else:
+            value, label = line, "КОМПАНИЯ"
+        if len(value) >= 3:
+            entries.append((value, label))
+    entries.sort(key=lambda e: -len(e[0]))
+    return [(_dict_pattern(v), DICT_LABEL_TO_ID.get(l, l.lower()), l)
+            for v, l in entries], p
+
+
+# ══════════════════════════════════════════════════════════════
 #  NER-СЛОЙ (Natasha)
 # ══════════════════════════════════════════════════════════════
 
@@ -307,7 +365,7 @@ class NerLayer:
 
 
 class Anonymizer:
-    def __init__(self, enabled_types=None, use_ner=True):
+    def __init__(self, enabled_types=None, use_ner=True, use_dict=True, dict_path=None):
         self.enabled = enabled_types or ENABLED_BY_DEFAULT
         self.keys = {}        # placeholder → original
         self.counters = {}    # type_id → count
@@ -320,6 +378,14 @@ class Anonymizer:
                 self.ner_status = "включён (Natasha)"
             except ImportError:
                 self.ner_status = "недоступен — pip3 install natasha"
+        self.custom_rules = []
+        self.dict_status = "выключен"
+        if use_dict:
+            self.custom_rules, dict_file = load_custom_dict(dict_path)
+            if self.custom_rules:
+                self.dict_status = f"{len(self.custom_rules)} записей ({dict_file.name})"
+            else:
+                self.dict_status = f"пусто — заполните {dict_file.name}"
 
     def _next_placeholder(self, type_id, label):
         self.counters[type_id] = self.counters.get(type_id, 0) + 1
@@ -357,6 +423,21 @@ class Anonymizer:
 
         # Нормализация: склеиваем цифры с пробелами (ПД-4 формат)
         result = self._preprocess(text)
+
+        # Нулевой проход: личный словарь — приоритет над regex и NER
+        for pat, type_id, label in self.custom_rules:
+
+            def dict_replacer(m, type_id=type_id, label=label):
+                original = m.group(0)
+                key = f"{type_id}::{original}"
+                if key in self._seen:
+                    return self._seen[key]
+                ph = self._next_placeholder(type_id, label)
+                self.keys[ph] = {"original": original, "type": label}
+                self._seen[key] = ph
+                return ph
+
+            result = pat.sub(dict_replacer, result)
 
         for rule in RULES:
             if rule["id"] not in self.enabled:
@@ -820,7 +901,8 @@ def main():
         return
 
     use_ner = "--no-ner" not in args
-    files = [a for a in args if a != "--no-ner"]
+    use_dict = "--no-dict" not in args
+    files = [a for a in args if a not in ("--no-ner", "--no-dict")]
 
     if not files:
         print("=" * 60)
@@ -830,6 +912,7 @@ def main():
         print("Использование:")
         print("  python anonymizer.py файл1.docx файл2.xlsx ...")
         print("  python anonymizer.py --no-ner файл.docx   (без NER-слоя)")
+        print("  python anonymizer.py --no-dict файл.docx  (без личного словаря)")
         print()
         print("Поддерживаемые форматы:")
         print("  .docx  .xlsx  .pdf  .txt  .html  .csv")
@@ -841,7 +924,7 @@ def main():
         input("Нажмите Enter для выхода...")
         sys.exit(0)
 
-    anon = Anonymizer(use_ner=use_ner)
+    anon = Anonymizer(use_ner=use_ner, use_dict=use_dict)
     results = []
     errors = []
 
@@ -851,6 +934,7 @@ def main():
     print("=" * 60)
     print()
     print(f"  NER-слой: {anon.ner_status}")
+    print(f"  Личный словарь: {anon.dict_status}")
     print()
 
     for f_str in files:
