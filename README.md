@@ -146,16 +146,13 @@ python3 anonymizer.py --restore результат_из_claude_anon.docx клю�
 
 ### Установка на macOS (кнопки на рабочем столе)
 
+Кнопки запускают `anonymizer.py` прямо из папки репозитория
+(путь задан в переменной `SCRIPT_DIR` внутри `.command`-файлов —
+поправьте, если клонировали не в `~/ClaudeProjects/real/anonymizer`).
+
 ```bash
-# Создать папку
-mkdir -p ~/Documents/anonymizer
-
-# Скопировать скрипт
-cp anonymizer.py ~/Documents/anonymizer/
-
 # Скопировать кнопки на рабочий стол
-cp Обезличить.command ~/Desktop/
-cp Расшифровать.command ~/Desktop/
+cp Обезличить.command Расшифровать.command ~/Desktop/
 
 # Дать права на запуск
 chmod +x ~/Desktop/Обезличить.command ~/Desktop/Расшифровать.command

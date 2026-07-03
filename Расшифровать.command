@@ -1,7 +1,7 @@
 #!/bin/bash
 # Расшифровщик документов v2 — надёжная обработка путей с кириллицей и iCloud
 
-SCRIPT="$HOME/Documents/anonymizer/anonymizer.py"
+SCRIPT="$HOME/ClaudeProjects/real/anonymizer/anonymizer.py"
 
 # Проверки
 if ! command -v python3 &>/dev/null; then
@@ -12,7 +12,7 @@ fi
 
 if [ ! -f "$SCRIPT" ]; then
   echo "❌ Скрипт не найден: $SCRIPT"
-  echo "   Положи anonymizer.py в ~/Documents/anonymizer/"
+  echo "   Положи anonymizer.py в ~/ClaudeProjects/real/anonymizer/"
   read -p "Нажми Enter..."
   exit 1
 fi

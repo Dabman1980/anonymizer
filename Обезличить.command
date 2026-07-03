@@ -1,7 +1,7 @@
 #!/bin/bash
 # Обезличиватель документов v2 — надёжная обработка путей с кириллицей и iCloud
 
-SCRIPT_DIR="$HOME/Documents/anonymizer"
+SCRIPT_DIR="$HOME/ClaudeProjects/real/anonymizer"
 SCRIPT="$SCRIPT_DIR/anonymizer.py"
 
 # Проверки
@@ -13,7 +13,7 @@ fi
 
 if [ ! -f "$SCRIPT" ]; then
   echo "❌ Скрипт не найден: $SCRIPT"
-  echo "   Положи anonymizer.py в ~/Documents/anonymizer/"
+  echo "   Положи anonymizer.py в ~/ClaudeProjects/real/anonymizer/"
   read -p "Нажми Enter..."
   exit 1
 fi
