@@ -250,12 +250,76 @@ ENABLED_BY_DEFAULT = {"company", "project", "egrn", "kadastr", "fio",
                       "phone", "email"}
 
 
+# ══════════════════════════════════════════════════════════════
+#  NER-СЛОЙ (Natasha)
+# ══════════════════════════════════════════════════════════════
+
+# Типы сущностей Natasha → (type_id, label) анонимайзера.
+# PER и ORG используют те же id, что и regex-правила, поэтому
+# нумерация плейсхолдеров и дедупликация сквозные для обоих слоёв.
+NER_LABEL_MAP = {
+    "PER": ("fio", "ФИО"),
+    "ORG": ("company", "КОМПАНИЯ"),
+    "LOC": ("ner_loc", "ЛОКАЦИЯ"),
+}
+
+# LOC по умолчанию выключен: упоминания городов/регионов обычно нужны
+# для анализа, а адреса ловит regex-правило address
+NER_TYPES_BY_DEFAULT = ("PER", "ORG")
+
+# Канцелярские роли, которые NER-модель путает с ФИО в шапках документов
+# («Заёмщик: ...», «Поручитель: ...»)
+NER_ROLE_STOPWORDS = {
+    "заёмщик", "заемщик", "поручитель", "залогодатель", "кредитор",
+    "арендатор", "арендодатель", "покупатель", "продавец",
+    "исполнитель", "заказчик", "подрядчик", "клиент", "агент",
+    "директор", "руководитель", "бухгалтер", "стороны", "сторона",
+    "договор", "приложение", "банк",
+}
+
+
+class NerLayer:
+    """Второй проход: нейросетевой NER (Natasha/Slovnet) добирает ФИО и
+    организации, которые не покрыты regex-шаблонами — одиночные фамилии,
+    компании без организационно-правовой формы, нестандартные написания.
+    Regex-слой всегда идёт первым, чтобы структурные реквизиты
+    (ИНН, СНИЛС, счета) не достались NER."""
+
+    def __init__(self, types=NER_TYPES_BY_DEFAULT):
+        from natasha import Segmenter, NewsEmbedding, NewsNERTagger, Doc
+        self._segmenter = Segmenter()
+        self._tagger = NewsNERTagger(NewsEmbedding())
+        self._Doc = Doc
+        self.types = set(types)
+
+    def spans(self, text):
+        """Возвращает [(start, stop, type_id, label, value), ...]"""
+        doc = self._Doc(text)
+        doc.segment(self._segmenter)
+        doc.tag_ner(self._tagger)
+        out = []
+        for span in doc.spans:
+            if span.type not in self.types:
+                continue
+            type_id, label = NER_LABEL_MAP[span.type]
+            out.append((span.start, span.stop, type_id, label, text[span.start:span.stop]))
+        return out
+
+
 class Anonymizer:
-    def __init__(self, enabled_types=None):
+    def __init__(self, enabled_types=None, use_ner=True):
         self.enabled = enabled_types or ENABLED_BY_DEFAULT
         self.keys = {}        # placeholder → original
         self.counters = {}    # type_id → count
         self._seen = {}       # original → placeholder (для дедупликации)
+        self.ner = None
+        self.ner_status = "выключен"
+        if use_ner:
+            try:
+                self.ner = NerLayer()
+                self.ner_status = "включён (Natasha)"
+            except ImportError:
+                self.ner_status = "недоступен — pip3 install natasha"
 
     def _next_placeholder(self, type_id, label):
         self.counters[type_id] = self.counters.get(type_id, 0) + 1
@@ -332,7 +396,46 @@ class Anonymizer:
 
                 result = pat.sub(replacer, result)
 
+        if self.ner:
+            result = self._apply_ner(result)
+
         return result
+
+    def _apply_ner(self, text):
+        """Второй проход по тексту: NER-сущности, пропущенные regex-слоем.
+        Замены выполняются справа налево, чтобы не сбить смещения спанов."""
+        if len(text) < 4 or not re.search(r'[А-Яа-яёЁ]', text):
+            return text
+
+        for start, stop, type_id, label, value in reversed(self.ner.spans(text)):
+            value = value.strip()
+            # Не трогаем уже вставленные плейсхолдеры [ФИО_1] и их окрестности
+            if re.search(r'[\[\]]', text[max(0, start - 1):stop + 1]):
+                continue
+            # Отсекаем мусорные спаны: короче 3 символов, без букв,
+            # или похожие на внутренность плейсхолдера (КАПС_1)
+            if len(value) < 3 or not re.search(r'[А-Яа-яёЁA-Za-z]', value):
+                continue
+            if re.fullmatch(r'[А-ЯЁA-Z0-9_]+', value) and '_' in value:
+                continue
+            # Коды документов («КМ-2024-0055»): цифры есть, строчных букв нет
+            if re.search(r'\d', value) and not re.search(r'[а-яёa-z]', value):
+                continue
+            # Одиночное слово-роль из шапки документа — не ФИО
+            if value.lower() in NER_ROLE_STOPWORDS:
+                continue
+
+            key = f"{type_id}::{value}"
+            if key in self._seen:
+                ph = self._seen[key]
+            else:
+                ph = self._next_placeholder(type_id, label)
+                self.keys[ph] = {"original": value, "type": label}
+                self._seen[key] = ph
+
+            text = text[:start] + text[start:stop].replace(value, ph, 1) + text[stop:]
+
+        return text
 
     def restore(self, text):
         """Заменяет плейсхолдеры обратно на оригинальные данные."""
@@ -716,7 +819,8 @@ def main():
             main_restore(rest)
         return
 
-    files = args
+    use_ner = "--no-ner" not in args
+    files = [a for a in args if a != "--no-ner"]
 
     if not files:
         print("=" * 60)
@@ -725,6 +829,7 @@ def main():
         print()
         print("Использование:")
         print("  python anonymizer.py файл1.docx файл2.xlsx ...")
+        print("  python anonymizer.py --no-ner файл.docx   (без NER-слоя)")
         print()
         print("Поддерживаемые форматы:")
         print("  .docx  .xlsx  .pdf  .txt  .html  .csv")
@@ -736,7 +841,7 @@ def main():
         input("Нажмите Enter для выхода...")
         sys.exit(0)
 
-    anon = Anonymizer()
+    anon = Anonymizer(use_ner=use_ner)
     results = []
     errors = []
 
@@ -744,6 +849,8 @@ def main():
     print("=" * 60)
     print("  ОБЕЗЛИЧИВАТЕЛЬ ДОКУМЕНТОВ")
     print("=" * 60)
+    print()
+    print(f"  NER-слой: {anon.ner_status}")
     print()
 
     for f_str in files:
