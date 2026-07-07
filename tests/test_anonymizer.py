@@ -8,6 +8,10 @@
 - захват адреса перепрыгивал границу предложения и глотал уже
   вставленный плейсхолдер [ФИО_1] внутрь ключа АДРЕС;
 - restore был однопроходным и не разворачивал вложенный плейсхолдер.
+
+Кейс от 07.07.2026 (живая приёмка щита ПДн Аси):
+- маркер списка Outlook «·» в начале строки слепил NER —
+  «·        Литвинов Павел, Начальник отдела» уходил в LLM как есть.
 """
 
 import sys
@@ -18,9 +22,23 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from anonymizer import Anonymizer, restore_text
 
+# NER-слой один на все тесты: модель Natasha грузится несколько секунд
+try:
+    from anonymizer import NerLayer
+    _NER = NerLayer()
+except ImportError:
+    _NER = None
+
 # Тесты гоняем без NER и словаря: только regex-слой, детерминированно
 def make_anon():
     return Anonymizer(use_ner=False, use_dict=False)
+
+
+def make_ner_anon():
+    """Anonymizer с общим NER-слоем (модель не перегружается на каждый тест)."""
+    anon = Anonymizer(use_ner=False, use_dict=False)
+    anon.ner = _NER
+    return anon
 
 
 class TestAddressSentenceBoundary(unittest.TestCase):
@@ -96,6 +114,63 @@ class TestRestoreMultipass(unittest.TestCase):
         masked = anon.replace(text)
         self.assertNotIn("Кузнецов", masked)
         self.assertNotIn("Самара", masked)
+        self.assertEqual(anon.restore(masked), text)
+
+
+@unittest.skipUnless(_NER, "natasha не установлена — NER-тесты пропущены")
+class TestNerBulletedLines(unittest.TestCase):
+    def test_outlook_bullet_line_masked(self):
+        # Регресс 07.07.2026: «·» + отступ в начале строки слепили NER
+        text = "·        Литвинов Павел, Начальник отдела"
+        anon = make_ner_anon()
+        result = anon.replace(text)
+        self.assertNotIn("Литвинов", result)
+        self.assertIn("[ФИО_1]", result)
+        # Маркер и отступ в выводе сохранены — правится только вход NER
+        self.assertTrue(result.startswith("·        "))
+
+    def test_all_list_markers_masked(self):
+        for marker in ("·", "•", "—", "-", "*"):
+            with self.subTest(marker=marker):
+                text = f"{marker}        Литвинов Павел, Начальник отдела"
+                result = make_ner_anon().replace(text)
+                self.assertNotIn("Литвинов", result)
+
+    def test_bullet_without_space_masked(self):
+        # «·Литвинов» без пробела после маркера — тоже вёрстка писем
+        result = make_ner_anon().replace("·Литвинов Павел, Начальник отдела")
+        self.assertNotIn("Литвинов", result)
+
+    def test_numbering_across_regex_and_ner_layers(self):
+        # Regex-слой ловит полное ФИО (ФИО_1), NER добирает
+        # маркированную строку (ФИО_2) — нумерация сквозная, без дырок
+        text = ("Участники встречи:\n"
+                "·        Кузнецов Андрей Викторович, аналитик\n"
+                "·        Литвинов Павел, Начальник отдела")
+        anon = make_ner_anon()
+        result = anon.replace(text)
+        self.assertNotIn("Кузнецов", result)
+        self.assertNotIn("Литвинов", result)
+        self.assertIn("[ФИО_1]", result)
+        self.assertIn("[ФИО_2]", result)
+        self.assertEqual(anon.counters.get("fio"), 2)
+
+    def test_dedup_between_bullet_and_plain_text(self):
+        # Одно имя в маркированной строке и в обычном предложении —
+        # один плейсхолдер (дедупликация не ломается от маркеров)
+        text = ("·        Литвинов Павел, Начальник отдела\n"
+                "Литвинов Павел подтвердил участие.")
+        anon = make_ner_anon()
+        result = anon.replace(text)
+        self.assertNotIn("Литвинов", result)
+        self.assertEqual(result.count("[ФИО_1]"), 2)
+        self.assertEqual(anon.counters.get("fio"), 1)
+
+    def test_roundtrip_with_bullet(self):
+        # Восстановление возвращает исходную строку вместе с маркером
+        text = "·        Литвинов Павел, Начальник отдела"
+        anon = make_ner_anon()
+        masked = anon.replace(text)
         self.assertEqual(anon.restore(masked), text)
 
 
