@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from anonymizer import Anonymizer, restore_text
+from anonymizer import Anonymizer, restore_text, _ner_view
 
 # NER-слой один на все тесты: модель Natasha грузится несколько секунд
 try:
@@ -172,6 +172,77 @@ class TestNerBulletedLines(unittest.TestCase):
         anon = make_ner_anon()
         masked = anon.replace(text)
         self.assertEqual(anon.restore(masked), text)
+
+
+class TestNerHomoglyphs(unittest.TestCase):
+    """Кейс от 16.07.2026 (боевой прогон визиток): OCR прочитал логотип
+    латиницей — A U+0041, T U+0054, O U+004F, H U+0048 вместо кириллических.
+    На экране не отличить, NER компанию не увидел, и она ушла бы в LLM
+    необезличенной. Тот же класс, что маркер списка Outlook: слово выглядит
+    русским, а NER слеп. Фикстура — «МТС»: публичная компания, все её буквы
+    имеют латинских двойников, синтетическое имя NER бы не узнал."""
+
+    # Ссылка из замера: на ней провалился Tesseract, ломать её нельзя
+    ZOOM = "us06web.zoom.us/j/84213?pwd=a3vnxd3ahtyieXyLzX5icAQY1iWoEd.1"
+
+    def test_view_returns_cyrillic_to_ner(self):
+        self.assertEqual(_ner_view("MTC"), "МТС")
+
+    def test_view_repairs_mixed_alphabet_word(self):
+        # OCR может смешать алфавиты внутри слова: А(кир) T(лат) О(кир) H(лат)
+        self.assertEqual(_ner_view("МTС"), "МТС")
+
+    def test_view_never_changes_length(self):
+        # Инвариант механизма: спаны NER валидны в оригинале только пока
+        # длина совпадает. Разъедется — щит замаскирует не тот кусок.
+        for text in ("MTC", self.ZOOM, "·  Литвинов Павел", "Power Query, MAX", ""):
+            self.assertEqual(len(_ner_view(text)), len(text), text)
+
+    def test_view_keeps_links_and_codes_latin(self):
+        # Внутри ссылки латиница настоящая; лишний спан увёл бы её в плейсхолдер
+        self.assertEqual(_ner_view(f"Подключение: {self.ZOOM}"), f"Подключение: {self.ZOOM}")
+        self.assertEqual(_ner_view("Пишите на ivan.k@example.ru"), "Пишите на ivan.k@example.ru")
+        self.assertEqual(_ner_view("Код AB12CO"), "Код AB12CO")
+
+    def test_view_keeps_real_latin_words(self):
+        # У «w», «Q», «G» двойников нет — значит слова латинские по-настоящему
+        self.assertEqual(_ner_view("Power Query, ChatGPT"), "Power Query, ChatGPT")
+
+    def test_view_keeps_single_letters(self):
+        self.assertEqual(_ner_view("Вариант A или B"), "Вариант A или B")
+
+    # Форма реальной визитки: латинский логотип среди русского текста
+    CARD = "г. Самара, ул. Мира, д. 7\nMTC"
+
+    def test_homoglyph_company_masked(self):
+        anon = make_ner_anon()
+        masked = anon.replace(self.CARD)
+        self.assertNotIn("MTC", masked)
+        self.assertTrue(anon.keys, "компания-гомоглиф ушла бы в LLM необезличенной")
+
+    def test_text_without_cyrillic_skips_ner_by_design(self):
+        # Гвардия replace(): нет кириллицы — NER не зовём вовсе. Значит голое
+        # «MTC» латиницей не маскируется, и это НЕ дыра: русский текст без
+        # единой кириллической буквы не существует, а на визитке рядом есть
+        # адрес и должность. Тест фиксирует границу, чтобы её не «чинили».
+        anon = make_ner_anon()
+        self.assertEqual(anon.replace("MTC"), "MTC")
+
+    def test_output_keeps_original_spelling(self):
+        # Нормализация — только для глаз NER: наружу уходит исходное написание,
+        # поэтому настоящее латинское слово не станет кириллическим
+        anon = make_ner_anon()
+        self.assertEqual(anon.replace("Встреча про MAX в 15:00"), "Встреча про MAX в 15:00")
+
+    def test_link_survives_the_shield(self):
+        anon = make_ner_anon()
+        self.assertIn(self.ZOOM, anon.replace(f"Созвон завтра: {self.ZOOM}"))
+
+    def test_roundtrip_returns_latin_original(self):
+        # Восстановление возвращает то, что было на визитке, а не кириллицу
+        anon = make_ner_anon()
+        masked = anon.replace(self.CARD)
+        self.assertEqual(anon.restore(masked), self.CARD)
 
 
 if __name__ == "__main__":
