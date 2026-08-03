@@ -245,5 +245,58 @@ class TestNerHomoglyphs(unittest.TestCase):
         self.assertEqual(anon.restore(masked), self.CARD)
 
 
+class TestAddressWithoutLabel(unittest.TestCase):
+    """Формы адреса без метки-с-двоеточием.
+
+    Происхождение — замер 03.08.2026 (ДЗ PEd06, синтетический корпус из 12
+    текстов с эталоном). Меточное правило требует двоеточия после ключевого
+    слова, а живые формулировки его не содержат: шапка заявления и визитка.
+    Все три формы уходили в LLM с открытым адресом.
+    """
+
+    def masked_addresses(self, text):
+        anon = make_anon()
+        anon.replace(text)
+        return [v["original"] for v in anon.keys.values() if v["type"] == "АДРЕС"]
+
+    def test_prospekt_in_application_header(self):
+        # «пр-т» не было в перечне типов улиц, а «по адресу» идёт без двоеточия
+        self.assertEqual(
+            self.masked_addresses("проживающей по адресу г. Тверь, пр-т Победы, д. 3, кв. 41"),
+            ["г. Тверь, пр-т Победы, д. 3, кв. 41"])
+
+    def test_house_number_without_abbreviation(self):
+        # Форма визитки: номер дома пишут просто цифрой, без «д.»
+        self.assertEqual(
+            self.masked_addresses("Главный бухгалтер   г. Казань, ул. Лесная, 14"),
+            ["г. Казань, ул. Лесная, 14"])
+
+    def test_two_word_city_captured_whole(self):
+        # Захват обрывался на «Нижний», оставляя снаружи половину города,
+        # улицу и дом. Счётчик пропусков этого не видел — нашлось глазами.
+        self.assertEqual(
+            self.masked_addresses("Приезжайте в г. Нижний Новгород, ул. Большая Покровская, д. 18, кв. 5."),
+            ["г. Нижний Новгород, ул. Большая Покровская, д. 18, кв. 5"])
+
+    def test_word_gorod_spelled_out(self):
+        self.assertEqual(
+            self.masked_addresses("Склад: город Пермь, пр-т Парковый, 62а"),
+            ["город Пермь, пр-т Парковый, 62а"])
+
+    def test_bare_number_does_not_swallow_prose(self):
+        # Голая цифра допущена только после распознанной улицы. Обычное
+        # перечисление после адреса захватываться не должно.
+        self.assertEqual(
+            self.masked_addresses("г. Уфа, б-р Ибрагимова, дом 41, где мы были вчера"),
+            ["г. Уфа, б-р Ибрагимова, дом 41"])
+
+    def test_ordinary_text_with_capital_word_untouched(self):
+        # Анти-тест: «г» и запятые без адресной формы — не адрес
+        for text in ("Годовой отчёт за 2025 год закрыт, выручка 1,5 млрд руб.",
+                     "Господин директор, прошу рассмотреть заявку в срок до 14 числа.",
+                     "Мир вокруг компании меняется быстрее, чем Учётная политика."):
+            self.assertEqual(self.masked_addresses(text), [], text)
+
+
 if __name__ == "__main__":
     unittest.main()
