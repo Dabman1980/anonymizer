@@ -245,6 +245,78 @@ class TestNerHomoglyphs(unittest.TestCase):
         self.assertEqual(anon.restore(masked), self.CARD)
 
 
+class TestBareDomain(unittest.TestCase):
+    """Узкий вариант закрытия пробела «домен раскрывает компанию».
+
+    Происхождение — HANDOFF от 16.07.2026 (пробел записан) и замер 03.08.2026
+    (ДЗ PEd06, подтверждён на синтетическом корпусе). Решение Дмитрия 03.08:
+    маскировать ТОЛЬКО упоминание сайта, ссылку на ресурс оставлять целой.
+
+    ⚠️ Различитель — наличие ПУТИ, а не схемы: эталонная ссылка проекта записана
+    без «https://», и критерий «нет схемы» её бы не спас.
+    """
+
+    LINK = "us06web.zoom.us/j/84213?pwd=a3vnxd3ahtyieXyLzX5icAQY1iWoEd.1"
+
+    def masked(self, text):
+        anon = make_anon()
+        return anon.replace(text)
+
+    def test_bare_domain_masked(self):
+        self.assertNotIn("severdrev", self.masked("Подробности на сайте www.severdrev.ru, там же прайс."))
+        self.assertNotIn("oootrader", self.masked("Пишите на сайт oootrader.com — там форма"))
+
+    def test_domain_at_sentence_end_masked(self):
+        # Точка конца предложения не должна мешать захвату
+        self.assertNotIn("severdrev", self.masked("Наш сайт severdrev.ru."))
+
+    def test_cyrillic_domain_masked(self):
+        self.assertNotIn("сайт.рф", self.masked("Открыт сайт.рф с ценами"))
+
+    # Ссылка без схемы, но в зоне ИЗ СПИСКА — единственная форма, которую держит
+    # именно страж пути. ⚠️ Эталонная ссылка проекта (`…zoom.us/j/…`) для этого
+    # не годится: зона `us` в список не входит, и тест на ней проходил бы даже
+    # при полностью сломанном страже — мутация «широкое правило» это и показала.
+    LINK_V_SPISKE = "disk.yandex.ru/d/abc123"
+
+    def test_link_with_path_survives(self):
+        # Главный инвариант узкого варианта: ссылка проходит щит целой,
+        # хотя схемы у неё нет. Ссылки — главная ценность события у Аси.
+        self.assertIn(self.LINK_V_SPISKE, self.masked(f"Файл тут: {self.LINK_V_SPISKE}"))
+        self.assertIn(self.LINK, self.masked(f"Созвон завтра: {self.LINK}"))
+
+    def test_link_with_scheme_survives(self):
+        for link in ("https://finmodel-pro.ru/prices", "http://example.com/page",
+                     "ftp://files.severdrev.ru", "www.severdrev.ru/"):
+            self.assertIn(link.rstrip("/") if link.endswith("/") else link,
+                          self.masked(f"Открой {link}"), link)
+
+    def test_email_not_touched_by_domain_rule(self):
+        # Почту берёт слой EMAIL раньше; правило сайта не должно дробить её
+        anon = make_anon()
+        anon.replace("Пишите на a.kuznetsov@example.ru.")
+        tipy = sorted({v["type"] for v in anon.keys.values()})
+        self.assertEqual(tipy, ["EMAIL"])
+
+    def test_ordinary_text_not_a_domain(self):
+        # Зоны перечислены закрытым списком именно ради этих случаев
+        for text in ("Приезжайте в г.Москва, ул. Мира",
+                     "Отчёт лежит в файле svod.pdf",
+                     "см. п.2 договора",
+                     "Готово.Русский текст дальше",
+                     "Версия 5.1.2.3 собрана",
+                     "Срок кредита 36 месяцев, ставка 18,5% годовых."):
+            anon = make_anon()
+            anon.replace(text)
+            sajty = [v for v in anon.keys.values() if v["type"] == "САЙТ"]
+            self.assertEqual(sajty, [], text)
+
+    def test_roundtrip_returns_domain(self):
+        anon = make_anon()
+        ishodnik = "Подробности на сайте www.severdrev.ru, там же прайс."
+        self.assertEqual(anon.restore(anon.replace(ishodnik)), ishodnik)
+
+
 class TestAddressWithoutLabel(unittest.TestCase):
     """Формы адреса без метки-с-двоеточием.
 
