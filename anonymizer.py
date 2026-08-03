@@ -500,6 +500,45 @@ def _ner_view(text):
     return ''.join(parts)
 
 
+class SurnameDictLayer:
+    """Третий проход: словарь фамилий (pymorphy3) добирает то, что пропустил NER.
+
+    Зачем. 03.08.2026 нашлось, что NER пропускает фамилии **спорадически**:
+    «Морозова прислала смету» проходит насквозь, «Морозов прислал смету» —
+    маскируется. Замер на 36 сочетаниях (6 фамилий × пол × падеж × позиция) дал
+    3 пропуска — это не правило вроде «женская в начале фразы», а промахи модели.
+    Пропуск = утечка, поэтому нужен добор.
+
+    ⚠️ Правило намеренно узкое: слово с большой буквы, которое словарь знает как
+    ФАМИЛИЮ (`Surn`) и НЕ знает как имя или отчество (`Name`/`Patr`).
+    Сужение до «не имя» — не украшение, а условие совместимости с решением
+    от 16.07.2026 «словарь имён отменён замером»: широкое правило по `Surn`
+    маскирует «Роман с продолжением», потому что фамилия Роман существует.
+    Проверено: «Вера», «Роман», «Любовь», «Надежда» остаются нетронутыми.
+
+    ⚠️ Цена названа: слово, которое одновременно фамилия и обычное слово,
+    маскируется лишнего — из 21 проверенного делового слова таким оказалось
+    одно, «Мороз». Это переусердствование, а не утечка, то есть безопасная
+    сторона размена.
+
+    Слой необязателен: без pymorphy3 работает как раньше (то есть пропуск
+    остаётся) — зависимость мягкая, как и natasha.
+    """
+
+    # Слово с большой буквы целиком: не часть плейсхолдера, не середина слова.
+    SLOVO = re.compile(r'(?<![\w\[])[А-ЯЁ][а-яё]+(?![\w\]])')
+
+    def __init__(self):
+        import pymorphy3
+        self._morph = pymorphy3.MorphAnalyzer()
+
+    def is_surname(self, word):
+        grammemes = [set(p.tag.grammemes) for p in self._morph.parse(word)]
+        surn = any("Surn" in g for g in grammemes)
+        imya = any(("Name" in g) or ("Patr" in g) for g in grammemes)
+        return surn and not imya
+
+
 class NerLayer:
     """Второй проход: нейросетевой NER (Natasha/Slovnet) добирает ФИО и
     организации, которые не покрыты regex-шаблонами — одиночные фамилии,
@@ -542,6 +581,16 @@ class Anonymizer:
                 self.ner_status = "включён (Natasha)"
             except ImportError:
                 self.ner_status = "недоступен — pip3 install natasha"
+        # Словарный добор фамилий — тоже мягкая зависимость: нет pymorphy3,
+        # значит слой молчит и поведение прежнее (с известным пропуском).
+        self.surnames = None
+        self.surnames_status = "выключен"
+        if use_ner:
+            try:
+                self.surnames = SurnameDictLayer()
+                self.surnames_status = "включён (pymorphy3)"
+            except ImportError:
+                self.surnames_status = "недоступен — pip3 install pymorphy3"
         self.custom_rules = []
         self.dict_status = "выключен"
         if use_dict:
@@ -683,7 +732,34 @@ class Anonymizer:
 
             text = text[:start] + text[start:stop].replace(value, ph, 1) + text[stop:]
 
-        return text
+        return self._surname_dict_pass(text)
+
+    def _surname_dict_pass(self, text):
+        """Третий проход: добор фамилий, которые NER пропустил (см. SurnameDictLayer).
+
+        Идёт ПОСЛЕДНИМ и только по словам, оставшимся открытыми: regex и NER уже
+        превратили всё найденное в плейсхолдеры, а внутрь плейсхолдера шаблон
+        не заходит. Слой только ДОБАВЛЯЕТ маскировку и никогда её не снимает —
+        направление, безопасное для fail-closed.
+        """
+        if self.surnames is None or "fio" not in self.enabled:
+            return text
+
+        def zamena(m):
+            value = m.group(0)
+            if value.lower() in NER_ROLE_STOPWORDS:
+                return value
+            if not self.surnames.is_surname(value):
+                return value
+            key = f"fio::{value}"
+            if key in self._seen:
+                return self._seen[key]
+            ph = self._next_placeholder("fio", "ФИО")
+            self.keys[ph] = {"original": value, "type": "ФИО"}
+            self._seen[key] = ph
+            return ph
+
+        return SurnameDictLayer.SLOVO.sub(zamena, text)
 
     def restore(self, text):
         """Заменяет плейсхолдеры обратно на оригинальные данные."""

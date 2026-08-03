@@ -41,6 +41,34 @@ def make_ner_anon():
     return anon
 
 
+# Словарь фамилий — тоже один на все тесты: pymorphy3 грузится несколько секунд.
+#
+# ⚠️ Импорт класса НАМЕРЕННО вынесен из try: пропускать тесты можно только из-за
+# отсутствия pymorphy3, но НЕ из-за отсутствия самого слоя. Первая редакция
+# ловила оба случая одним `except ImportError`, и на версии ядра без слоя весь
+# класс уходил в skip, а прогон рапортовал OK — то есть удаление функции делало
+# проверки зелёными. Поймано мутацией «версия без словарного слоя».
+from anonymizer import SurnameDictLayer  # noqa: E402
+
+try:
+    _SURNAMES = SurnameDictLayer()
+except ImportError:
+    _SURNAMES = None
+
+
+def make_full_anon():
+    """Все три слоя разом — конфигурация, в которой модуль работает у Аси.
+
+    ⚠️ Нужна отдельная фикстура: `make_anon`/`make_ner_anon` создают объект с
+    `use_ner=False`, поэтому словарный слой в них выключен, и тест на нём был бы
+    зелёным, ничего не проверяя.
+    """
+    anon = Anonymizer(use_ner=False, use_dict=False)
+    anon.ner = _NER
+    anon.surnames = _SURNAMES
+    return anon
+
+
 class TestAddressSentenceBoundary(unittest.TestCase):
     def test_address_stops_at_sentence_end(self):
         # Регресс: адрес без метки глотал текст за точкой конца предложения
@@ -243,6 +271,63 @@ class TestNerHomoglyphs(unittest.TestCase):
         anon = make_ner_anon()
         masked = anon.replace(self.CARD)
         self.assertEqual(anon.restore(masked), self.CARD)
+
+
+@unittest.skipIf(_SURNAMES is None, "pymorphy3 не установлен — словарный слой недоступен")
+class TestSurnameDictLayer(unittest.TestCase):
+    """Добор фамилий, которые NER пропускает.
+
+    Происхождение: 03.08.2026, найдено при разведке способов чинить
+    переусердствование. «Морозова прислала смету» проходило щит насквозь, а
+    «Морозов прислал смету» маскировалось. Замер на 36 сочетаниях (6 фамилий ×
+    пол × падеж × позиция) дал 3 пропуска — промахи модели, а не правило вроде
+    «женская в начале фразы», как я сначала записал в HANDOFF.
+    """
+
+    def test_leak_closed(self):
+        for text, familiya in (("Морозова прислала смету", "Морозова"),
+                               ("Лебедева прислала смету", "Лебедева")):
+            self.assertNotIn(familiya, make_full_anon().replace(text), text)
+
+    def test_july_decision_intact(self):
+        """Решение 16.07 «словарь имён отменён замером» ломать нельзя.
+
+        Именно ради этого правило сужено до «фамилия И НЕ имя»: широкое правило
+        по тегу Surn маскирует «Роман», потому что фамилия Роман существует.
+        """
+        for text in ("Вера в успех проекта у команды есть",
+                     "Роман с продолжением из этого не получится",
+                     "Любовь и голуби мы пересматривали"):
+            self.assertEqual(make_full_anon().replace(text), text, text)
+
+    def test_business_words_intact(self):
+        for text in ("Созвон завтра", "Отчёт за май закрыли вовремя",
+                     "Прошу подтвердить получение до конца недели",
+                     "Планёрка завтра в 10"):
+            self.assertEqual(make_full_anon().replace(text), text, text)
+
+    def test_roundtrip(self):
+        anon = make_full_anon()
+        ishodnik = "Морозова прислала смету"
+        self.assertEqual(anon.restore(anon.replace(ishodnik)), ishodnik)
+
+    def test_layer_is_optional(self):
+        """Без pymorphy3 модуль работает как раньше — зависимость мягкая.
+
+        Направление отказа безопасное: слой только ДОБАВЛЯЕТ маскировку, значит
+        его отсутствие возвращает прежний пропуск, а не создаёт новый.
+        """
+        anon = Anonymizer(use_ner=False, use_dict=False)
+        anon.ner = _NER
+        anon.surnames = None
+        self.assertEqual(anon.replace("Морозова прислала смету"), "Морозова прислала смету")
+
+    def test_does_not_enter_placeholders(self):
+        # Плейсхолдер уже стоит — слой не должен разбирать его на слова
+        anon = make_full_anon()
+        out = anon.replace("Позвони Кузнецову, телефон +7 (846) 555-12-34")
+        self.assertNotIn("[ФИО", out.replace("[ФИО_1]", ""))
+        self.assertIn("[ТЕЛЕФОН_1]", out)
 
 
 class TestOverMasking(unittest.TestCase):
