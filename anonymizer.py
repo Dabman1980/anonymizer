@@ -437,7 +437,30 @@ NER_ROLE_STOPWORDS = {
     "дедлайн", "акт", "накладная", "спецификация", "тендер", "аукцион",
     "аванс", "предоплата", "отсрочка", "отпуск", "командировка",
     "обучение", "тренинг", "звонок", "письмо", "напоминалка", "запись",
-    "подпись", "согласование",
+    "подпись", "согласование", "вебинар",
+
+    # ─── Финансовые термины и метрики (добавлено 03.08.2026) ──────────────
+    # Прогон по 7 РЕАЛЬНЫМ документам Дмитрия (кредитная политика, кейсовые
+    # задачи, методики) дал 68 масок, из них 16 — вот эти аббревиатуры,
+    # уехавшие в [КОМПАНИЯ]. Документ, где «МСФО» и «WACC» заменены
+    # плейсхолдерами, для LLM бесполезен, а именно такие документы —
+    # рабочий материал finsvc.
+    "мсфо", "рсбу", "цфо", "осв", "ддс", "опиу", "ндс", "ндфл", "усн",
+    "осно", "енвд", "пбу", "гаап", "квэд", "оквэд",
+    "cfo", "cfa", "ceo", "coo", "cto", "cio", "wacc", "dscr", "ebitda",
+    "ebit", "capex", "opex", "roi", "roe", "roa", "irr", "npv", "ccc",
+    "dio", "dso", "dpo", "abc", "xyz", "kpi", "erp", "crm", "llm",
+    "acca", "cima", "ifrs", "gaap", "ltv", "cac", "arr", "mrr", "bi",
+    "sql", "api", "pdf", "ocr", "rfm",
+
+    # ─── Заголовочные слова из тех же живых документов ────────────────────
+    # Класс «обычное слово с большой буквы → [ФИО]»: 24 случая из 68.
+    # Глагольные формы («Рассчитайте», «Ответьте») списком не покрыть —
+    # они отсекаются отдельным признаком, см. `_ner_slovo_ne_imya`.
+    "глоссарий", "годовой", "дашборд", "дашборда", "дилерские", "пассив",
+    "актив", "ответ", "скидка", "объём", "объем", "премия", "выручка",
+    "прибыль", "убыток", "баланс", "ежеквартально", "ежемесячно",
+    "обязательно", "инвест", "кейсовая", "итого", "прочее", "примечание",
 }
 
 # Маркер списка в начале строки — типовая вёрстка Outlook/Word
@@ -532,11 +555,42 @@ class SurnameDictLayer:
         import pymorphy3
         self._morph = pymorphy3.MorphAnalyzer()
 
-    def is_surname(self, word):
-        grammemes = [set(p.tag.grammemes) for p in self._morph.parse(word)]
-        surn = any("Surn" in g for g in grammemes)
-        imya = any(("Name" in g) or ("Patr" in g) for g in grammemes)
-        return surn and not imya
+    LICHNOE = {"Name", "Surn", "Patr"}
+    GLAGOL = {"VERB", "INFN", "PRTF", "PRTS", "GRND"}
+
+    def is_personal_name(self, word):
+        """Слово — личное имя по словарю. Объединение двух признаков.
+
+        ⚠️ Ни один по отдельности не годится, замерено 03.08.2026:
+
+        A. «фамилия и НЕ имя» — берёт «Литвинов», но теряет имена и отчества
+           («Марина», «Ксения», «Сергеевич»), а именно имя стояло первой строкой
+           на реальной визитке и уходило наружу.
+        B. «все разборы личные» — берёт имена и отчества, но теряет «Литвинов»
+           (у него есть и другое чтение).
+
+        Объединение берёт 12 форм из 14 проверенных и не задевает ни одного
+        делового слова из 17. Пропускает «Максим» и «Петров» — у обоих есть
+        нарицательное чтение; их берёт NER в контексте, слой лишь страховка.
+        """
+        g = [set(p.tag.grammemes) for p in self._morph.parse(word)]
+        if not g:
+            return False
+        familiya_ne_imya = (any("Surn" in r for r in g)
+                            and not any(("Name" in r) or ("Patr" in r) for r in g))
+        vse_lichnye = all(self.LICHNOE & r for r in g)
+        return familiya_ne_imya or vse_lichnye
+
+    def is_verb_form(self, word):
+        """Все разборы — глагольные и ни одного личного.
+
+        Нужно для обратной задачи: NER принимает повелительные формы из
+        методичек («Рассчитайте», «Ответьте», «Составьте») за ФИО. Списком
+        такое не покрыть — форм слишком много. Замер: 7 глаголов из 7 отсеяны,
+        10 имён и фамилий из 10 не задеты.
+        """
+        g = [set(p.tag.grammemes) for p in self._morph.parse(word)]
+        return bool(g) and all((self.GLAGOL & r) and not (self.LICHNOE & r) for r in g)
 
 
 class NerLayer:
@@ -721,6 +775,11 @@ class Anonymizer:
             # Одиночное слово-роль из шапки документа — не ФИО
             if value.lower() in NER_ROLE_STOPWORDS:
                 continue
+            # Повелительная форма из методички — не ФИО («Рассчитайте», «Ответьте»).
+            # Отдельным признаком, а не списком: форм слишком много.
+            if (self.surnames is not None and len(value.split()) == 1
+                    and self.surnames.is_verb_form(value)):
+                continue
 
             key = f"{type_id}::{value}"
             if key in self._seen:
@@ -749,7 +808,7 @@ class Anonymizer:
             value = m.group(0)
             if value.lower() in NER_ROLE_STOPWORDS:
                 return value
-            if not self.surnames.is_surname(value):
+            if not self.surnames.is_personal_name(value):
                 return value
             key = f"fio::{value}"
             if key in self._seen:
