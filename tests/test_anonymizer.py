@@ -245,6 +245,53 @@ class TestNerHomoglyphs(unittest.TestCase):
         self.assertEqual(anon.restore(masked), self.CARD)
 
 
+class TestOverMasking(unittest.TestCase):
+    """Переусердствование NER: деловое событие уезжало в [ФИО_N].
+
+    Происхождение: находка Г от 16.07.2026 («План-фактный» → [ФИО_2]), отложенная
+    с триггером «если карточки начнут врать». Триггер сработал 03.08.2026 — живая
+    проверка на сервере после выката дала «Созвон завтра» → «[ФИО_1] завтра».
+    Это типичный вход Аси, и LLM получала событие без названия.
+    """
+
+    def test_business_event_not_a_person(self):
+        anon = make_ner_anon()
+        for text in ("Созвон завтра", "Планёрка завтра в 10", "Приёмка завтра",
+                     "Созвон сегодня", "Созвон, завтра"):
+            self.assertEqual(anon.replace(text), text, text)
+
+    def test_real_surname_still_masked(self):
+        # Граница правки: NER-слой существует ради одиночных фамилий.
+        # Если бы он перестал их брать, это была бы утечка — цена выше.
+        for text, kusok in (("Литвинов завтра приедет", "Литвинов"),
+                            ("Позвони Кузнецову", "Кузнецову"),
+                            ("Передай Ольге документы", "Ольге")):
+            anon = make_ner_anon()
+            self.assertNotIn(kusok, anon.replace(text), text)
+
+    def test_stopwords_are_not_surnames(self):
+        """Машинная страховка списка: в нём не должно быть фамилий и имён.
+
+        Список — единственный способ, оставшийся после того как три
+        принципиальных были замерены и отвергнуты. Его опасность в том, что
+        одно неосторожное слово превращает стоп-лист в дыру: настоящая фамилия
+        перестанет маскироваться. Поэтому проверку делает словарь, а не глаз.
+        """
+        try:
+            import pymorphy3
+        except ImportError:
+            self.skipTest("pymorphy3 не установлен — проверка списка не выполнена")
+        from anonymizer import NER_ROLE_STOPWORDS
+        m = pymorphy3.MorphAnalyzer()
+        # «директор», «бухгалтер» и прочие роли лежат в списке с самого начала
+        # и словарём как фамилии не опознаются; если когда-нибудь опознаются —
+        # пусть тест покраснеет, это ровно тот сигнал, который нужен.
+        opasnye = [w for w in NER_ROLE_STOPWORDS
+                   if any({"Name", "Surn", "Patr"} & set(p.tag.grammemes)
+                          for p in m.parse(w))]
+        self.assertEqual(opasnye, [], "слово из стоп-листа словарь знает как имя/фамилию")
+
+
 class TestBareDomain(unittest.TestCase):
     """Узкий вариант закрытия пробела «домен раскрывает компанию».
 
