@@ -1,21 +1,127 @@
-MIT License
+Лицензия на личное использование (Personal Use License), версия 1.0
 
-Copyright (c) 2026 Dmitry Borisyuk
+Copyright (c) 2026 Дмитрий Борисюк (Dmitry Borisyuk). Все права защищены.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Русский текст является основным. English translation follows below; in case of
+any discrepancy the Russian text prevails.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+--------------------------------------------------------------------------------
+РУССКИЙ ТЕКСТ
+--------------------------------------------------------------------------------
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+«Материал» — содержимое этого репозитория, созданное автором: исходный код,
+документация, промпты, наборы данных, тексты, схемы и изображения.
+
+1. ЧТО РАЗРЕШЕНО БЕЗ ОТДЕЛЬНОГО СОГЛАСОВАНИЯ
+
+Автор безвозмездно и неисключительно разрешает любому лицу использовать,
+копировать, изменять и распространять Материал в личных, учебных и
+исследовательских целях, а также для ознакомления и оценки — при соблюдении
+условий раздела 3.
+
+2. ЧТО ТРЕБУЕТ ПРЕДВАРИТЕЛЬНОГО СОГЛАСОВАНИЯ
+
+Любое КОММЕРЧЕСКОЕ использование Материала допускается только по
+предварительному письменному согласию автора. Коммерческим считается,
+в частности:
+
+   а) использование Материала в деятельности, направленной на получение
+      дохода, в том числе во внутренних процессах коммерческой организации;
+   б) оказание платных услуг с использованием Материала;
+   в) включение Материала — полностью или частично, в изменённом или
+      неизменённом виде — в продукт или сервис, который продаётся,
+      распространяется по подписке или монетизируется иным образом;
+   г) продажа, сублицензирование, перепродажа или сдача Материала в аренду.
+
+Согласие оформляется отдельным письменным соглашением и может содержать
+собственные условия, включая вознаграждение. Отсутствие ответа согласием
+не является.
+
+3. УСЛОВИЯ ЛЮБОГО ИСПОЛЬЗОВАНИЯ
+
+   а) сохранять указание авторства и полный текст настоящей лицензии во всех
+      копиях и существенных частях Материала;
+   б) при распространении изменённой версии — прямо отмечать факт изменения и
+      распространять её на условиях настоящей лицензии;
+   в) не использовать имя автора и бренд FinDir.Moskva для продвижения
+      производных продуктов без письменного разрешения.
+
+4. КОМПОНЕНТЫ ТРЕТЬИХ ЛИЦ
+
+Настоящая лицензия распространяется только на Материал, созданный автором.
+Сторонние библиотеки, наборы данных, шрифты, медиафайлы и иные компоненты
+сохраняют собственные лицензии; их условия имеют приоритет в отношении этих
+компонентов. Перечень и источники — в README и файлах зависимостей.
+
+5. ОТСУТСТВИЕ ГАРАНТИЙ И ОТВЕТСТВЕННОСТИ
+
+МАТЕРИАЛ ПРЕДОСТАВЛЯЕТСЯ «КАК ЕСТЬ», БЕЗ КАКИХ-ЛИБО ГАРАНТИЙ, ЯВНЫХ ИЛИ
+ПОДРАЗУМЕВАЕМЫХ, ВКЛЮЧАЯ ГАРАНТИИ ПРИГОДНОСТИ ДЛЯ ОПРЕДЕЛЁННОЙ ЦЕЛИ И
+НЕНАРУШЕНИЯ ПРАВ. АВТОР НЕ НЕСЁТ ОТВЕТСТВЕННОСТИ ЗА КАКИЕ-ЛИБО ПРЕТЕНЗИИ,
+УБЫТКИ ИЛИ ИНОЙ ВРЕД, ВОЗНИКШИЕ ИЗ ИСПОЛЬЗОВАНИЯ МАТЕРИАЛА ИЛИ ИНЫХ ДЕЙСТВИЙ
+С НИМ. МАТЕРИАЛ НЕ ЯВЛЯЕТСЯ ИНДИВИДУАЛЬНОЙ ИНВЕСТИЦИОННОЙ, НАЛОГОВОЙ ИЛИ
+ЮРИДИЧЕСКОЙ КОНСУЛЬТАЦИЕЙ.
+
+6. КОНТАКТ ДЛЯ СОГЛАСОВАНИЯ КОММЕРЧЕСКОГО ИСПОЛЬЗОВАНИЯ
+
+   Telegram: @DmitryBorisyuk
+   GitHub:   https://github.com/Dabman1980
+
+--------------------------------------------------------------------------------
+ENGLISH TRANSLATION (informative)
+--------------------------------------------------------------------------------
+
+"Material" means the contents of this repository authored by the copyright
+holder: source code, documentation, prompts, datasets, texts, diagrams and
+images.
+
+1. PERMITTED WITHOUT ASKING
+
+The author grants any person a free, non-exclusive right to use, copy, modify
+and distribute the Material for personal, educational and research purposes,
+as well as for review and evaluation, subject to Section 3.
+
+2. REQUIRES PRIOR PERMISSION
+
+Any COMMERCIAL use of the Material is permitted only with the author's prior
+written consent. Commercial use includes, in particular:
+
+   (a) use of the Material in revenue-generating activity, including the
+       internal operations of a commercial organisation;
+   (b) providing paid services with the help of the Material;
+   (c) incorporating the Material, in whole or in part, modified or unmodified,
+       into a product or service that is sold, offered by subscription or
+       otherwise monetised;
+   (d) selling, sublicensing, reselling or renting out the Material.
+
+Consent is granted by a separate written agreement and may carry its own terms,
+including a fee. Silence does not constitute consent.
+
+3. CONDITIONS OF ANY USE
+
+   (a) retain the attribution and the full text of this licence in all copies
+       and substantial portions of the Material;
+   (b) when distributing a modified version, state clearly that it has been
+       modified and distribute it under this same licence;
+   (c) do not use the author's name or the FinDir.Moskva brand to promote
+       derivative products without written permission.
+
+4. THIRD-PARTY COMPONENTS
+
+This licence covers only the Material authored by the copyright holder.
+Third-party libraries, datasets, fonts, media and other components retain their
+own licences, which prevail with respect to those components. See the README and
+the dependency files for the list and sources.
+
+5. NO WARRANTY, NO LIABILITY
+
+THE MATERIAL IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING WARRANTIES OF FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES
+OR OTHER LIABILITY ARISING FROM THE USE OF OR OTHER DEALINGS IN THE MATERIAL.
+THE MATERIAL IS NOT INDIVIDUAL INVESTMENT, TAX OR LEGAL ADVICE.
+
+6. CONTACT FOR COMMERCIAL LICENSING
+
+   Telegram: @DmitryBorisyuk
+   GitHub:   https://github.com/Dabman1980
