@@ -16,11 +16,14 @@
 
 import sys
 import unittest
+import unittest.mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from anonymizer import Anonymizer, restore_text, _ner_view
+import anonymizer
+from anonymizer import (Anonymizer, restore_text, _ner_view,
+                        NER_ROLE_STOPWORDS)
 
 # NER-слой один на все тесты: модель Natasha грузится несколько секунд
 try:
@@ -422,6 +425,133 @@ class TestOverMasking(unittest.TestCase):
                           for p in m.parse(w))]
         self.assertEqual(sorted(opasnye), [],
                          "слово из стоп-листа словарь ЗНАЕТ как имя/фамилию")
+
+
+@unittest.skipIf(_SURNAMES is None, "pymorphy3 не установлен — падежная сверка недоступна")
+class TestPadezhnyeFormyStopSlov(unittest.TestCase):
+    """Стоп-лист сверялся ТОЧНОЙ формой слова.
+
+    Происхождение: HANDOFF от 03.08.2026 («осталось по типу ORG и в падежных
+    формах») + замер 07.08.2026 на синтетическом корпусе из 22 текстов.
+    «Смету», «Отчёту», «Планёрку», «Созвону» проходили мимо стоп-листа и
+    уезжали в [КОМПАНИЯ_N]/[ФИО_N], хотя именительный падеж в списке есть.
+    Ложных тревог на корпусе-цели: 8 → 3.
+    """
+
+    def test_oblique_forms_not_masked(self):
+        for text in ("Смету направим завтра до конца дня.",
+                     "Отчёту присвоен внутренний номер.",
+                     "Планёрку перенесли на четверг.",
+                     "Созвону быть в пятницу утром.",
+                     "Приложению к Договору присвоен номер два.",
+                     "Сверку и Ревизию назначили на конец месяца."):
+            self.assertEqual(make_full_anon().replace(text), text, text)
+
+    def test_nominative_forms_still_work(self):
+        # Точная сверка никуда не делась — падежная только добавлена сверху
+        for text in ("Созвон завтра", "Отчёт за май закрыли вовремя",
+                     "Планёрка завтра в 10"):
+            self.assertEqual(make_full_anon().replace(text), text, text)
+
+    def test_surname_with_stopword_lemma_still_masked(self):
+        """⛔ ГЛАВНАЯ страховка: лемма настоящей фамилии = стоп-слово.
+
+        «Балансов» → лемма «баланс», «Банков» → «банк», «Директоров» →
+        «директор». Все три лежат в стоп-листе, и наивная лемматизация
+        открыла бы фамилию наружу. Пропуск дороже переусердствования,
+        поэтому именно этот случай — граница правки.
+
+        Спасает запрет на множественное число: перебор 1443 форм стоп-листа
+        (07.08.2026) показал, что ВСЕ 70 совпадений с формой фамилии —
+        родительный падеж множественного числа, ни одного единственного.
+        """
+        for text, familiya in (("Балансов подписал накладную вчера", "Балансов"),
+                               ("Банков прислал письмо", "Банков"),
+                               ("Директоров вышел на связь", "Директоров")):
+            self.assertNotIn(familiya, make_full_anon().replace(text), text)
+
+    def test_plural_forms_are_not_stopwords(self):
+        # Тот же запрет на уровне слоя, без NER: правило проверяемо само по себе
+        for word in ("Балансов", "Банков", "Директоров", "Актов", "Клиентов"):
+            self.assertFalse(
+                _SURNAMES.padezhnaya_forma_stop_slova(word, NER_ROLE_STOPWORDS),
+                f"{word}: форма множественного числа принята за стоп-слово")
+
+    def test_dictionary_name_beats_the_lemma(self):
+        """Вторая ступень страховки: словарное имя не может стать стоп-словом.
+
+        Проверяется подложенным стоп-словом «мороз»: «Мороза» — его падежная
+        форма (правило сработало бы), но словарь знает «Мороз» как фамилию,
+        и именно этот признак обязан перевесить.
+        """
+        anon = make_full_anon()
+        with unittest.mock.patch.object(
+                anonymizer, "NER_ROLE_STOPWORDS", NER_ROLE_STOPWORDS | {"мороз"}):
+            self.assertTrue(_SURNAMES.padezhnaya_forma_stop_slova(
+                "Мороза", NER_ROLE_STOPWORDS | {"мороз"}))
+            self.assertFalse(anon._stop_slovo("Мороза"))
+
+
+@unittest.skipIf(_SURNAMES is None, "pymorphy3 не установлен — словарный слой недоступен")
+class TestObshchestvoNeKompaniya(unittest.TestCase):
+    """«Общество» в уставе — не название компании, а ссылка на сторону.
+
+    Происхождение: HANDOFF от 03.08.2026, замер 07.08.2026. NER принимал его
+    за ORG, и текст устава приходил в LLM без подлежащего.
+    """
+
+    def test_obshchestvo_is_not_a_company(self):
+        for text in ("Общество вправе выпускать облигации по решению совета.",
+                     "Общества, входящие в группу, сдают отчётность ежеквартально."):
+            self.assertEqual(make_full_anon().replace(text), text, text)
+
+    def test_full_opf_still_masks_the_name(self):
+        """Граница правки: полная ОПФ прописью обязана терять имя компании.
+
+        ⚠️ Замер 07.08.2026 поправил ожидание: regex-правило `company` полную
+        форму прописью НЕ покрывает (в шаблоне перечислены только сокращения
+        ООО/АО/ПАО…), имя внутри кавычек берёт NER отдельным спаном. Тест
+        закрепляет фактическое поведение, а не предполагаемое: шаблонные слова
+        остаются, название уходит в маску.
+        """
+        out = make_full_anon().replace(
+            "Общество с ограниченной ответственностью «Ромашка» "
+            "зарегистрировано в 2019 году.")
+        self.assertNotIn("Ромашка", out)
+        self.assertIn("Общество с ограниченной ответственностью", out)
+
+    def test_abbreviated_opf_masked_by_regex(self):
+        # Сокращённая форма — работа regex-слоя, до всякого NER
+        self.assertNotIn("Ромашка", make_anon().replace("ООО «Ромашка» подписало акт."))
+
+
+@unittest.skipIf(_SURNAMES is None, "pymorphy3 не установлен — словарный слой недоступен")
+class TestKapsNazvaniyaKompanij(unittest.TestCase):
+    """Сторож ОТВЕРГНУТОЙ гипотезы о заголовках капсом (07.08.2026).
+
+    Проверялась гипотеза: «слово целиком капсом маскировать только при
+    СЛОВАРНОМ личном разборе» — тогда «РЕЗЮМЕ» и «ГЛОССАРИЙ» перестали бы
+    уезжать в маску. На оси «фамилия против заголовка» различитель безошибочен
+    (34 слова), но замер на названиях компаний капсом отверг его: маскировка
+    пропала у 5 названий из 5 («МТС», «ГАЗПРОМ», «АЭРОФЛОТ», «СЕВЕРДРЕВ»,
+    «РОМАШКА»). Словарь не отличает «АЭРОФЛОТ» от «РЕЗЮМЕ» ничем: оба —
+    известные нарицательные без личного разбора.
+
+    Утечка дороже переусердствования, поэтому правка не внесена, а заголовки
+    капсом по-прежнему маскируются лишнего. Тест держит границу: если гипотезу
+    когда-нибудь внесут снова, он покраснеет.
+    """
+
+    def test_caps_company_name_is_masked(self):
+        for text, nazvanie in (("Договор заключён с МТС на год.", "МТС"),
+                               ("ГАЗПРОМ подписал соглашение о поставках.", "ГАЗПРОМ"),
+                               ("АЭРОФЛОТ отменил рейс до Самары.", "АЭРОФЛОТ")):
+            self.assertNotIn(nazvanie, make_full_anon().replace(text), text)
+
+    def test_caps_surname_is_masked(self):
+        for text, familiya in (("Заявление подписал ЛИТВИНОВ.", "ЛИТВИНОВ"),
+                               ("МОРОЗОВА Ольга Петровна, главный бухгалтер", "МОРОЗОВА")):
+            self.assertNotIn(familiya, make_full_anon().replace(text), text)
 
 
 class TestBareDomain(unittest.TestCase):
