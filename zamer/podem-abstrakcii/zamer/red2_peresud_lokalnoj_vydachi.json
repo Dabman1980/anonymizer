@@ -1,0 +1,8 @@
+{
+  "generator": "qwen2.5:7b (локально)",
+  "sudya": "gemini-3.1-pro",
+  "uznavanie": 9,
+  "smysl": 9,
+  "kriterij_1_uznavanie_nizhe_na_2": false,
+  "kriterij_2_smysl_ne_menee_8": true
+}
