@@ -14,9 +14,10 @@ KOREN = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(KOREN / "tools"))
 import ocenka  # noqa: E402  — метрика берётся как есть
 
-ANON = Path("/Users/dmitry/ClaudeProjects/real/anonymizer/.claude/worktrees/"
-            "agent-a6e0ae2b0745b9cb0")
-sys.path.insert(0, str(ANON))
+# Корень репозитория с ядром. Изначально здесь стоял абсолютный путь во временный
+# worktree, в котором правка писалась, — он исчез вместе с worktree, и замер стало
+# невозможно повторить. Путь вычисляется от файла: стенд переносим вместе с репозиторием.
+sys.path.insert(0, str(KOREN.parents[1]))
 from anonymizer import Anonymizer, NerLayer, SurnameDictLayer  # noqa: E402
 
 _NER = NerLayer()
