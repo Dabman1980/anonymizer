@@ -1,0 +1,445 @@
+{
+  "ped06": {
+    "stroki": [
+      {
+        "id": "A1",
+        "gruppa": "A",
+        "nuzhno_zamaskirovat": 3,
+        "propuski": [],
+        "lozhnye_trevogi": [],
+        "sohrannost": true,
+        "gde_slomalos": "",
+        "povtorov": 1,
+        "vosproizvodimo": null,
+        "sekundy": null,
+        "tokenov_v_sekundu": null
+      },
+      {
+        "id": "A2",
+        "gruppa": "A",
+        "nuzhno_zamaskirovat": 5,
+        "propuski": [],
+        "lozhnye_trevogi": [],
+        "sohrannost": true,
+        "gde_slomalos": "",
+        "povtorov": 1,
+        "vosproizvodimo": null,
+        "sekundy": null,
+        "tokenov_v_sekundu": null
+      },
+      {
+        "id": "A3",
+        "gruppa": "A",
+        "nuzhno_zamaskirovat": 3,
+        "propuski": [],
+        "lozhnye_trevogi": [],
+        "sohrannost": true,
+        "gde_slomalos": "",
+        "povtorov": 1,
+        "vosproizvodimo": null,
+        "sekundy": null,
+        "tokenov_v_sekundu": null
+      },
+      {
+        "id": "A4",
+        "gruppa": "A",
+        "nuzhno_zamaskirovat": 3,
+        "propuski": [],
+        "lozhnye_trevogi": [],
+        "sohrannost": true,
+        "gde_slomalos": "",
+        "povtorov": 1,
+        "vosproizvodimo": null,
+        "sekundy": null,
+        "tokenov_v_sekundu": null
+      },
+      {
+        "id": "A5",
+        "gruppa": "A",
+        "nuzhno_zamaskirovat": 3,
+        "propuski": [],
+        "lozhnye_trevogi": [],
+        "sohrannost": true,
+        "gde_slomalos": "",
+        "povtorov": 1,
+        "vosproizvodimo": null,
+        "sekundy": null,
+        "tokenov_v_sekundu": null
+      },
+      {
+        "id": "B1",
+        "gruppa": "B",
+        "nuzhno_zamaskirovat": 3,
+        "propuski": [],
+        "lozhnye_trevogi": [],
+        "sohrannost": true,
+        "gde_slomalos": "",
+        "povtorov": 1,
+        "vosproizvodimo": null,
+        "sekundy": null,
+        "tokenov_v_sekundu": null
+      },
+      {
+        "id": "B2",
+        "gruppa": "B",
+        "nuzhno_zamaskirovat": 2,
+        "propuski": [],
+        "lozhnye_trevogi": [],
+        "sohrannost": true,
+        "gde_slomalos": "",
+        "povtorov": 1,
+        "vosproizvodimo": null,
+        "sekundy": null,
+        "tokenov_v_sekundu": null
+      },
+      {
+        "id": "B3",
+        "gruppa": "B",
+        "nuzhno_zamaskirovat": 4,
+        "propuski": [],
+        "lozhnye_trevogi": [],
+        "sohrannost": true,
+        "gde_slomalos": "",
+        "povtorov": 1,
+        "vosproizvodimo": null,
+        "sekundy": null,
+        "tokenov_v_sekundu": null
+      },
+      {
+        "id": "B4",
+        "gruppa": "B",
+        "nuzhno_zamaskirovat": 3,
+        "propuski": [],
+        "lozhnye_trevogi": [],
+        "sohrannost": true,
+        "gde_slomalos": "",
+        "povtorov": 1,
+        "vosproizvodimo": null,
+        "sekundy": null,
+        "tokenov_v_sekundu": null
+      },
+      {
+        "id": "C1",
+        "gruppa": "C",
+        "nuzhno_zamaskirovat": 0,
+        "propuski": [],
+        "lozhnye_trevogi": [],
+        "sohrannost": true,
+        "gde_slomalos": "",
+        "povtorov": 1,
+        "vosproizvodimo": null,
+        "sekundy": null,
+        "tokenov_v_sekundu": null
+      },
+      {
+        "id": "C2",
+        "gruppa": "C",
+        "nuzhno_zamaskirovat": 0,
+        "propuski": [],
+        "lozhnye_trevogi": [],
+        "sohrannost": true,
+        "gde_slomalos": "",
+        "povtorov": 1,
+        "vosproizvodimo": null,
+        "sekundy": null,
+        "tokenov_v_sekundu": null
+      },
+      {
+        "id": "C3",
+        "gruppa": "C",
+        "nuzhno_zamaskirovat": 0,
+        "propuski": [],
+        "lozhnye_trevogi": [],
+        "sohrannost": true,
+        "gde_slomalos": "",
+        "povtorov": 1,
+        "vosproizvodimo": null,
+        "sekundy": null,
+        "tokenov_v_sekundu": null
+      }
+    ],
+    "svodka": {
+      "A": {
+        "spanov": 17,
+        "propushcheno": 0,
+        "recall": 1.0,
+        "lozhnyh_trevog": 0
+      },
+      "B": {
+        "spanov": 12,
+        "propushcheno": 0,
+        "recall": 1.0,
+        "lozhnyh_trevog": 0
+      },
+      "C": {
+        "spanov": 0,
+        "propushcheno": 0,
+        "recall": null,
+        "lozhnyh_trevog": 0
+      },
+      "sohrannost": "12 из 12",
+      "vosproizvodimost": "не мерилась",
+      "sekund_na_tekst_bez_pervogo": 0
+    }
+  },
+  "cel": {
+    "stroki": [
+      {
+        "id": "K1",
+        "gruppa": "K",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "РЕЗЮМЕ\n\nФинансовый директор, опыт 16 лет в корпоративном кредитовании."
+      },
+      {
+        "id": "K2",
+        "gruppa": "K",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "КЕЙС\nОценка ликвидности торговой компании за квартал."
+      },
+      {
+        "id": "K3",
+        "gruppa": "K",
+        "propuski": [],
+        "lozhnye": [
+          "ГЛОССАРИЙ",
+          "АКТИВ"
+        ],
+        "sohrannost": true,
+        "vyhod": "[КОМПАНИЯ_1] — ресурс, контролируемый компанией."
+      },
+      {
+        "id": "K4",
+        "gruppa": "K",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "ОТЧЁТ О ФИНАНСОВЫХ РЕЗУЛЬТАТАХ\nПоказатели приведены за период."
+      },
+      {
+        "id": "K5",
+        "gruppa": "K",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "ВВЕДЕНИЕ\nЦЕЛЬ И ЗАДАЧИ\nЗАКЛЮЧЕНИЕ"
+      },
+      {
+        "id": "K6",
+        "gruppa": "K",
+        "propuski": [
+          "КУЗНЕЦОВ АНДРЕЙ ВИКТОРОВИЧ"
+        ],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "КУЗНЕЦОВ АНДРЕЙ ВИКТОРОВИЧ\nФинансовый директор"
+      },
+      {
+        "id": "K7",
+        "gruppa": "K",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "Заявление подписал [ФИО_1]."
+      },
+      {
+        "id": "K8",
+        "gruppa": "K",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "[КОМПАНИЯ_1] [ФИО_1], главный бухгалтер"
+      },
+      {
+        "id": "F1",
+        "gruppa": "F",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "Договор заключён с [КОМПАНИЯ_1] на год."
+      },
+      {
+        "id": "F2",
+        "gruppa": "F",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "[КОМПАНИЯ_1] подписал соглашение о поставках."
+      },
+      {
+        "id": "F3",
+        "gruppa": "F",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "[КОМПАНИЯ_1] отменил рейс до Самары."
+      },
+      {
+        "id": "F4",
+        "gruppa": "F",
+        "propuski": [
+          "СЕВЕРДРЕВ"
+        ],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "Поставщик СЕВЕРДРЕВ отгрузил партию."
+      },
+      {
+        "id": "F5",
+        "gruppa": "F",
+        "propuski": [
+          "РОМАШКА"
+        ],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "РОМАШКА\nСчёт на оплату услуг за июль."
+      },
+      {
+        "id": "P1",
+        "gruppa": "P",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "Смету направим завтра до конца дня."
+      },
+      {
+        "id": "P2",
+        "gruppa": "P",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "Отчёту присвоен внутренний номер."
+      },
+      {
+        "id": "P3",
+        "gruppa": "P",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "Планёрку перенесли на четверг."
+      },
+      {
+        "id": "P4",
+        "gruppa": "P",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "Созвону быть в пятницу утром."
+      },
+      {
+        "id": "P5",
+        "gruppa": "P",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "Приложению к Договору присвоен номер два."
+      },
+      {
+        "id": "P6",
+        "gruppa": "P",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "Сверку и Ревизию назначили на конец месяца."
+      },
+      {
+        "id": "P7",
+        "gruppa": "P",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "Позвони [ФИО_2], а документы передай [ФИО_1]."
+      },
+      {
+        "id": "P8",
+        "gruppa": "P",
+        "propuski": [
+          "Актов"
+        ],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "Актов прислал документы по сделке."
+      },
+      {
+        "id": "P9",
+        "gruppa": "P",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "[КОМПАНИЯ_1] подписал накладную вчера."
+      },
+      {
+        "id": "O1",
+        "gruppa": "O",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "Общество вправе выпускать облигации по решению совета."
+      },
+      {
+        "id": "O2",
+        "gruppa": "O",
+        "propuski": [],
+        "lozhnye": [
+          "Уставный капитал Общества"
+        ],
+        "sohrannost": true,
+        "vyhod": "[КОМПАНИЯ_2] [КОМПАНИЯ_1] десять тысяч рублей."
+      },
+      {
+        "id": "O3",
+        "gruppa": "O",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "Общества, входящие в группу, сдают отчётность ежеквартально."
+      },
+      {
+        "id": "O4",
+        "gruppa": "O",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "Общество с ограниченной ответственностью «[КОМПАНИЯ_1]» зарегистрировано в 2019 году."
+      },
+      {
+        "id": "O5",
+        "gruppa": "O",
+        "propuski": [],
+        "lozhnye": [],
+        "sohrannost": true,
+        "vyhod": "[КОМПАНИЯ_1] подписало акт приёмки работ."
+      }
+    ],
+    "svodka": {
+      "F": {
+        "spanov": 5,
+        "propushcheno": 2,
+        "recall": 0.6,
+        "lozhnyh_trevog": 0
+      },
+      "K": {
+        "spanov": 4,
+        "propushcheno": 1,
+        "recall": 0.75,
+        "lozhnyh_trevog": 2
+      },
+      "O": {
+        "spanov": 2,
+        "propushcheno": 0,
+        "recall": 1.0,
+        "lozhnyh_trevog": 1
+      },
+      "P": {
+        "spanov": 4,
+        "propushcheno": 1,
+        "recall": 0.75,
+        "lozhnyh_trevog": 0
+      },
+      "sohrannost": "27 из 27"
+    }
+  }
+}

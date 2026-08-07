@@ -1,0 +1,150 @@
+{
+  "model": "gemma3:4b",
+  "polozhitelnyj": 4,
+  "otricatelnyj": 1,
+  "gejt_projden": false,
+  "detali_plus": [
+    {
+      "id": "T01",
+      "ozhidalsya": 1,
+      "otvet": 1,
+      "verno": true,
+      "syroj_otvet": "1"
+    },
+    {
+      "id": "T02",
+      "ozhidalsya": 1,
+      "otvet": 1,
+      "verno": true,
+      "syroj_otvet": "1"
+    },
+    {
+      "id": "T03",
+      "ozhidalsya": 2,
+      "otvet": 2,
+      "verno": true,
+      "syroj_otvet": "2"
+    },
+    {
+      "id": "T04",
+      "ozhidalsya": 2,
+      "otvet": 2,
+      "verno": true,
+      "syroj_otvet": "2"
+    },
+    {
+      "id": "T05",
+      "ozhidalsya": 3,
+      "otvet": 4,
+      "verno": false,
+      "syroj_otvet": "4"
+    },
+    {
+      "id": "T06",
+      "ozhidalsya": 3,
+      "otvet": 4,
+      "verno": false,
+      "syroj_otvet": "4"
+    },
+    {
+      "id": "T07",
+      "ozhidalsya": 4,
+      "otvet": 5,
+      "verno": false,
+      "syroj_otvet": "5"
+    },
+    {
+      "id": "T08",
+      "ozhidalsya": 4,
+      "otvet": 5,
+      "verno": false,
+      "syroj_otvet": "5"
+    },
+    {
+      "id": "T09",
+      "ozhidalsya": 5,
+      "otvet": 0,
+      "verno": false,
+      "syroj_otvet": "6"
+    },
+    {
+      "id": "T10",
+      "ozhidalsya": 5,
+      "otvet": 0,
+      "verno": false,
+      "syroj_otvet": "6"
+    }
+  ],
+  "detali_minus": [
+    {
+      "id": "T01",
+      "ozhidalsya": 1,
+      "otvet": 3,
+      "verno": false,
+      "syroj_otvet": "3"
+    },
+    {
+      "id": "T02",
+      "ozhidalsya": 1,
+      "otvet": 3,
+      "verno": false,
+      "syroj_otvet": "3"
+    },
+    {
+      "id": "T03",
+      "ozhidalsya": 2,
+      "otvet": 3,
+      "verno": false,
+      "syroj_otvet": "3"
+    },
+    {
+      "id": "T04",
+      "ozhidalsya": 2,
+      "otvet": 3,
+      "verno": false,
+      "syroj_otvet": "3"
+    },
+    {
+      "id": "T05",
+      "ozhidalsya": 3,
+      "otvet": 5,
+      "verno": false,
+      "syroj_otvet": "5"
+    },
+    {
+      "id": "T06",
+      "ozhidalsya": 3,
+      "otvet": 3,
+      "verno": true,
+      "syroj_otvet": "3"
+    },
+    {
+      "id": "T07",
+      "ozhidalsya": 4,
+      "otvet": 5,
+      "verno": false,
+      "syroj_otvet": "5"
+    },
+    {
+      "id": "T08",
+      "ozhidalsya": 4,
+      "otvet": 3,
+      "verno": false,
+      "syroj_otvet": "3"
+    },
+    {
+      "id": "T09",
+      "ozhidalsya": 5,
+      "otvet": 3,
+      "verno": false,
+      "syroj_otvet": "3"
+    },
+    {
+      "id": "T10",
+      "ozhidalsya": 5,
+      "otvet": 3,
+      "verno": false,
+      "syroj_otvet": "3"
+    }
+  ]
+}
